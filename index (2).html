@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Guard Hub Pro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root { --bg: #f3f4f6; --primary: #0ea5e9; --secondary: #6366f1; --danger: #ef4444; --success: #10b981; --text: #1e293b; --text-dim: #64748b; }
+        body { font-family: system-ui, sans-serif; margin: 0; background: var(--bg); color: var(--text); padding-bottom: 80px; -webkit-tap-highlight-color: transparent; }
+        
+        .top-nav { background: white; padding: 12px 15px; text-align: center; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 1000; }
+        .logo { font-weight: 900; color: var(--primary); font-size: 1.1em; letter-spacing: -1px; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; height: 65px; border-top: 1px solid #e2e8f0; z-index: 2000; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
+        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-dim); cursor: pointer; border: none; background: none; }
+        .nav-item svg { width: 22px; height: 22px; margin-bottom: 4px; }
+        .nav-item.active { color: var(--primary); }
+
+        .container { padding: 12px; max-width: 500px; margin: auto; }
+        .page { display: none; } .page.active { display: block; }
+
+        .search-area { background: white; padding: 15px; border-radius: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 15px; border: 1px solid #e2e8f0; }
+        .input-group { display: flex; gap: 8px; margin-bottom: 12px; position: relative; }
+        #searchInput { flex: 1; padding: 15px 45px 15px 15px; border-radius: 12px; border: 2px solid #e2e8f0; font-size: 1.1em; outline: none; background: #f8fafc; width: 100%; }
+        .clear-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-dim); cursor: pointer; display: none; background: none; border: none; }
+        .clear-btn.visible { display: block; }
+        .brand-scroller { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
+        .chip { flex: 0 0 auto; padding: 8px 16px; border-radius: 20px; background: #f1f5f9; font-size: 0.8em; font-weight: 700; color: var(--text-dim); cursor: pointer; border: 1px solid #e2e8f0; }
+        .chip.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .res-card { background: white; border-radius: 15px; margin-bottom: 12px; overflow: hidden; display: flex; height: 110px; border: 1px solid #e2e8f0; }
+        .res-left { flex: 0 0 60%; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .res-id-val { font-size: 2.5em; font-weight: 900; line-height: 1; }
+        .res-common-val { font-size: 1.9em; font-weight: 800; text-transform: uppercase; margin-top: 2px; }
+        .res-right { flex: 0 0 40%; padding: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        .res-brand-tag { font-size: 0.85em; font-weight: 900; color: var(--primary); text-transform: uppercase; margin-bottom: 6px; border-bottom: 2px solid #f1f5f9; width: 100%; padding-bottom: 2px; }
+        .res-model-name { font-size: 1.05em; font-weight: 800; line-height: 1.1; }
+
+        .sync-hub { background: white; padding: 20px; border-radius: 24px; border: 1px solid #e2e8f0; margin-bottom: 20px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
+        .sync-hub h6 { margin: 0 0 15px 0; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); font-size: 0.7em; text-align: center; }
+        .sync-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .sync-btn { border: none; border-radius: 18px; padding: 15px 10px; cursor: pointer; display: flex; flex-direction: column; align-items: center; transition: transform 0.2s; position: relative; overflow: hidden; }
+        .sync-btn:active { transform: scale(0.96); }
+        .sync-btn svg { width: 28px; height: 28px; margin-bottom: 8px; }
+        .sync-btn span { font-size: 0.75em; font-weight: 800; }
+        /* Swapped Colors */
+        .btn-green-style { background: #ecfdf5; color: #059669; }
+        .btn-blue-style { background: #f0f9ff; color: #0284c7; }
+        .sync-indicator { position: absolute; top: 8px; right: 8px; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.5; }
+
+        .form-card { background: white; padding: 15px; border-radius: 20px; border: 1px solid #e2e8f0; margin-bottom: 15px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        input, select, textarea { background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px; border-radius: 10px; font-size: 13px; width: 100%; box-sizing: border-box; }
+        #save-btn { margin-top: 10px; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 800; width: 100%; }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 3000; padding: 20px; backdrop-filter: blur(4px); }
+        .modal-overlay.active { display: flex; }
+        .danger-modal { background: white; padding: 25px; border-radius: 24px; text-align: center; max-width: 320px; }
+        .danger-icon { width: 60px; height: 60px; background: #fee2e2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; color: var(--danger); }
+
+        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--text); color: white; padding: 12px 24px; border-radius: 50px; font-weight: 700; font-size: 0.85em; z-index: 4000; display: none; box-shadow: 0 10px 15px rgba(0,0,0,0.1); }
+
+        .tab-bar { display: flex; gap: 4px; background: #e2e8f0; padding: 4px; border-radius: 12px; margin-bottom: 10px; }
+        .tab-bar button { flex: 1; padding: 8px; border: none; border-radius: 8px; font-size: 0.65em; font-weight: 800; cursor: pointer; background: transparent; color: var(--text-dim); }
+        .tab-bar button.active { background: white; color: var(--primary); }
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+        .mini-card { background: white; padding: 8px; border-radius: 10px; text-align: center; font-size: 0.65em; border: 1px solid #e2e8f0; cursor: pointer; }
+        .mini-brand { font-size: 0.75em; font-weight: 800; color: var(--primary); display: block; }
+        #dbCount { text-align: center; font-size: 0.7em; font-weight: 800; color: var(--text-dim); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+    </style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<div class="modal-overlay" id="dangerModal">
+    <div class="danger-modal">
+        <div class="danger-icon"><svg width="32" height="32" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></div>
+        <h3 style="margin: 0 0 10px 0;">Wipe Database?</h3>
+        <p style="color: var(--text-dim); font-size: 0.9em; margin-bottom: 20px;">This will permanently delete all data.</p>
+        <button onclick="confirmWipe()" style="background: var(--danger); color: white; border: none; width: 100%; padding: 12px; border-radius: 12px; font-weight: 800; margin-bottom: 10px;">YES, WIPE EVERYTHING</button>
+        <button onclick="closeModal()" style="background: none; border: none; color: var(--text-dim); font-weight: 700; width: 100%;">CANCEL</button>
+    </div>
+</div>
+
+<div class="top-nav"><div class="logo">GUARD HUB PRO</div></div>
+
+<div class="container">
+    <div id="search-page" class="page active">
+        <div class="search-area">
+            <div class="input-group">
+                <input type="text" id="searchInput" placeholder="Model name..." oninput="handleSearch()">
+                <button class="clear-btn" id="clearBtn" onclick="resetSearch()">
+                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>
+                </button>
+            </div>
+            <div class="brand-scroller" id="brandChips">
+                <div class="chip active" onclick="setBrand('All', this)">All</div>
+                <div class="chip" onclick="setBrand('Samsung', this)">Samsung</div><div class="chip" onclick="setBrand('Vivo', this)">Vivo</div><div class="chip" onclick="setBrand('Oppo', this)">Oppo</div><div class="chip" onclick="setBrand('Realme', this)">Realme</div><div class="chip" onclick="setBrand('Xiaomi', this)">Xiaomi</div><div class="chip" onclick="setBrand('Apple', this)">Apple</div><div class="chip" onclick="setBrand('OnePlus', this)">OnePlus</div><div class="chip" onclick="setBrand('iQOO', this)">iQOO</div><div class="chip" onclick="setBrand('Motorola', this)">Motorola</div><div class="chip" onclick="setBrand('Infinix', this)">Infinix</div><div class="chip" onclick="setBrand('Nothing', this)">Nothing</div><div class="chip" onclick="setBrand('Poco', this)">Poco</div><div class="chip" onclick="setBrand('Honor', this)">Honor</div><div class="chip" onclick="setBrand('Other', this)">Other</div>
+            </div>
+        </div>
+        <div id="searchResults"></div>
+    </div>
+
+    <div id="settings-page" class="page">
+        <div class="sync-hub">
+            <h6>Database Sync Center</h6>
+            <div class="sync-grid">
+                <button class="sync-btn btn-green-style" onclick="document.getElementById('excelFile').click()">
+                    <div class="sync-indicator"></div>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    <span>IMPORT EXCEL</span>
+                </button>
+                <button class="sync-btn btn-blue-style" onclick="downloadExcel()">
+                    <div class="sync-indicator"></div>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    <span>EXPORT EXCEL</span>
+                </button>
+            </div>
+        </div>
+        
+        <input type="file" id="excelFile" style="display:none" onchange="importExcel(event)" accept=".xlsx, .xls">
+
+        <div class="form-card">
+            <h4 style="margin:0 0 10px 0; font-size: 0.9em;" id="form-title">Add/Edit Entry</h4>
+            <input type="hidden" id="edit-id">
+            <div class="form-grid">
+                <select id="newBrand">
+                    <option value="Samsung">Samsung</option><option value="Vivo">Vivo</option><option value="Oppo">Oppo</option><option value="Realme">Realme</option><option value="Xiaomi">Xiaomi</option><option value="Apple">Apple</option><option value="OnePlus">OnePlus</option><option value="iQOO">iQOO</option><option value="Motorola">Motorola</option><option value="Infinix">Infinix</option><option value="Nothing">Nothing</option><option value="Poco">Poco</option><option value="Honor">Honor</option><option value="Other">Other</option>
+                </select>
+                <input type="text" id="newGuard" placeholder="Guard ID">
+                <input type="text" id="newCommon" placeholder="Common Name" style="grid-column:span 2;">
+                <textarea id="newModels" placeholder="Models (comma separated)" style="grid-column:span 2; height:45px;"></textarea>
+            </div>
+            <button id="save-btn" onclick="save()">Save Entry</button>
+            <div id="edit-options" style="display:none; text-align:center; margin-top:10px;">
+                <button onclick="deleteEntry()" style="color:var(--danger); background:none; border:none; font-weight:800; font-size: 11px;">DELETE</button> | <button onclick="clearForm()" style="color:var(--text-dim); background:none; border:none; font-weight:700; font-size: 11px;">CANCEL</button>
+            </div>
+            <button onclick="openModal()" style="margin-top:20px; background: none; border: 1px solid #fee2e2; color: #fca5a5; padding: 10px; width: 100%; border-radius: 12px; font-size: 0.7em; font-weight: 700;">WIPE DATABASE</button>
+        </div>
+        <div id="dbCount">Total Items: 0</div>
+        <div class="tab-bar"><button class="t-btn active" onclick="switchTab('phone', this)">PHONES</button><button class="t-btn" onclick="switchTab('id', this)">IDs</button><button class="t-btn" onclick="switchTab('common', this)">COMMON</button></div>
+        <div id="list-container"></div>
+    </div>
+</div>
+
+<div class="bottom-nav">
+    <button class="nav-item active" id="nav-search" onclick="showPage('search')"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg><span>Search</span></button>
+    <button class="nav-item" id="nav-settings" onclick="showPage('settings')"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 15.5A3.5 3.5 0 0 1 8.5 12 3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7 2l-1.4 1.1c.1.3.1.6.1.9 0 .3 0 .6-.1.9l1.4 1.1c.1.1.2.2.1.4l-1.3 2.3c-.1.2-.3.3-.5.2l-1.7-.7c-.3.3-.7.5-1.1.7l-.3 1.8c0 .2-.2.3-.4.3h-2.7c-.2 0-.4-.1-.4-.3l-.3-1.8c-.4-.2-.8-.4-1.1-.7l-1.7.7c-.2.1-.4 0-.5-.2z"/></svg><span>Settings</span></button>
+</div>
+
+<script>
+    let db = JSON.parse(localStorage.getItem('guardDB')) || [];
+    let currentTab = 'phone', selectedBrand = 'All', drillVal = null;
+
+    function notify(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3000); }
+    function openModal() { document.getElementById('dangerModal').classList.add('active'); }
+    function closeModal() { document.getElementById('dangerModal').classList.remove('active'); }
+    function confirmWipe() { db = []; localStorage.setItem('guardDB', '[]'); render(); closeModal(); notify("Database Cleared."); }
+
+    function showPage(p) {
+        document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById(p + '-page').classList.add('active');
+        document.getElementById('nav-' + p).classList.add('active');
+        if(p === 'settings') render();
+    }
+
+    function handleSearch() { document.getElementById('clearBtn').classList.toggle('visible', document.getElementById('searchInput').value.length > 0); search(); }
+    function resetSearch() { document.getElementById('searchInput').value = ''; document.getElementById('clearBtn').classList.remove('visible'); search(); }
+    function setBrand(b, el) { selectedBrand = b; document.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); el.classList.add('active'); search(); }
+    function switchTab(t, btn) { currentTab = t; drillVal = null; document.querySelectorAll('.t-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); render(); }
+
+    function save() {
+        const id = document.getElementById('edit-id').value;
+        const brand = document.getElementById('newBrand').value;
+        const guard = document.getElementById('newGuard').value.trim();
+        const common = document.getElementById('newCommon').value.trim();
+        const models = document.getElementById('newModels').value.trim();
+        if(!guard || !models) return alert("Missing ID or Models");
+        if(id) { db = db.filter(item => item.id != id); }
+        const list = models.split(',').map(m => m.trim()).filter(m => m);
+        list.forEach((m, i) => db.push({ brand, model: m, guard, common, id: Date.now() + i }));
+        localStorage.setItem('guardDB', JSON.stringify(db)); clearForm(); render(); notify("Saved!");
+    }
+
+    function search() {
+        const q = document.getElementById('searchInput').value.trim().toLowerCase();
+        const res = document.getElementById('searchResults'); res.innerHTML = '';
+        if(!q && selectedBrand === 'All') return;
+        db.filter(i => String(i.model).toLowerCase().includes(q) && (selectedBrand === 'All' || i.brand.toLowerCase() === selectedBrand.toLowerCase())).forEach(m => {
+            const d = document.createElement('div'); d.className = 'res-card';
+            d.innerHTML = `<div class="res-left"><div class="res-id-val">${m.guard}</div><div class="res-common-val">${m.common || ''}</div></div><div class="res-right"><span class="res-brand-tag">${m.brand}</span><span class="res-model-name">${m.model}</span></div>`;
+            res.appendChild(d);
+        });
+    }
+
+    function render() {
+        document.getElementById('dbCount').innerText = `Total Items: ${db.length}`;
+        const container = document.getElementById('list-container'); container.innerHTML = '';
+        const grid = document.createElement('div'); grid.className = 'grid';
+        if (drillVal) {
+            const head = document.createElement('div');
+            head.style = "grid-column: 1 / -1; background:#e2e8f0; padding:8px; border-radius:10px; display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.7em; font-weight:bold;";
+            head.innerHTML = `<span>${drillVal}</span><span onclick="drillVal=null;render()" style="color:var(--primary); cursor:pointer;">BACK</span>`;
+            grid.appendChild(head);
+            const key = currentTab === 'id' ? 'guard' : 'common';
+            db.filter(i => String(i[key]) === String(drillVal)).forEach(i => {
+                const el = document.createElement('div'); el.className = 'mini-card';
+                el.onclick = () => edit(i.id);
+                el.innerHTML = `<span class="mini-brand">${i.brand}</span><b>${i.model}</b><br>${i.guard}`;
+                grid.appendChild(el);
+            });
+        } else if(currentTab === 'id' || currentTab === 'common') {
+            const key = currentTab === 'id' ? 'guard' : 'common';
+            const groups = {}; db.forEach(i => { const v = i[key] || "None"; groups[v] = (groups[v] || 0) + 1; });
+            Object.keys(groups).sort().forEach(k => {
+                const el = document.createElement('div'); el.className = 'mini-card';
+                el.onclick = () => { drillVal = k; render(); };
+                el.innerHTML = `<b>${k}</b><br><span style="color:var(--primary)">${groups[k]} Items</span>`;
+                grid.appendChild(el);
+            });
+        } else {
+            db.slice().sort((a,b) => a.brand.localeCompare(b.brand)).forEach(i => {
+                const el = document.createElement('div'); el.className = 'mini-card';
+                el.onclick = () => edit(i.id);
+                el.innerHTML = `<span class="mini-brand">${i.brand}</span><b>${i.model}</b><br>${i.guard}`;
+                grid.appendChild(el);
+            });
+        }
+        container.appendChild(grid);
+    }
+
+    function edit(id) {
+        const i = db.find(item => item.id == id); if(!i) return;
+        document.getElementById('edit-id').value = i.id;
+        const select = document.getElementById('newBrand');
+        let found = false;
+        for (let opt of select.options) {
+            if (opt.value.toLowerCase() === i.brand.toLowerCase()) {
+                select.value = opt.value;
+                found = true;
+                break;
+            }
+        }
+        if (!found) select.value = "Other";
+        document.getElementById('newModels').value = i.model;
+        document.getElementById('newGuard').value = i.guard;
+        document.getElementById('newCommon').value = i.common || "";
+        document.getElementById('edit-options').style.display = "block";
+        document.getElementById('save-btn').innerText = "Update Entry";
+        window.scrollTo(0,0);
+    }
+
+    function clearForm() { document.getElementById('edit-id').value = ''; document.getElementById('newModels').value = ''; document.getElementById('newGuard').value = ''; document.getElementById('newCommon').value = ''; document.getElementById('edit-options').style.display = "none"; document.getElementById('save-btn').innerText = "Save Entry"; }
+    function deleteEntry() { if(confirm("Delete this?")) { db = db.filter(i => i.id != document.getElementById('edit-id').value); localStorage.setItem('guardDB', JSON.stringify(db)); clearForm(); render(); notify("Deleted."); } }
+    
+    function downloadExcel() { 
+        if(db.length === 0) return notify("⚠️ Database is empty! Nothing to export.");
+        const ws = XLSX.utils.json_to_sheet(db); 
+        const wb = XLSX.utils.book_new(); 
+        XLSX.utils.book_append_sheet(wb, ws, "Inventory"); 
+        XLSX.writeFile(wb, "Guard_Hub_Backup.xlsx"); 
+    }
+
+    function importExcel(e) { 
+        const file = e.target.files[0];
+        if(!file) return;
+        const r = new FileReader(); 
+        r.onload = (ev) => { 
+            try {
+                const data = new Uint8Array(ev.target.result);
+                const wb = XLSX.read(data, {type:'array'}); 
+                const importedData = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                if(importedData.length > 0) {
+                    db = importedData;
+                    localStorage.setItem('guardDB', JSON.stringify(db)); 
+                    render(); 
+                    notify("Excel Restored!"); 
+                }
+            } catch(err) { alert("Error reading Excel file"); }
+            e.target.value = '';
+        }; 
+        r.readAsArrayBuffer(file); 
+    }
+</script>
+</body>
+</html>
